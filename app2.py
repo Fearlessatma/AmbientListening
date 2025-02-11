@@ -47,7 +47,7 @@ def record_audio(app_instance):
 
         while not stop_recording:
             data = stream.read(CHUNK)
-            wf.writeframes(data)  # Write directly to file instead of storing in memory
+            wf.writeframes(data)  
 
     stream.stop_stream()
     stream.close()
@@ -56,16 +56,6 @@ def record_audio(app_instance):
     app_instance.update_status("Recording ended.")
     asyncio.run(process_audio(app_instance))
 
-
-# Asynchronous transcription function
-async def transcribe_audio_async():
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(executor, transcribe_audio, OUTPUT_FILENAME)
-
-# Asynchronous summary generation
-async def generate_summary_async():
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(executor, generate_summary)
 
 # Main processing function
 async def process_audio(app_instance):
@@ -86,6 +76,16 @@ async def process_audio(app_instance):
         app_instance.update_accuracy(accuracy)
         app_instance.update_rouge_score(rouge_scores)
 
+# Asynchronous transcription function
+async def transcribe_audio_async():
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(executor, transcribe_audio, OUTPUT_FILENAME)
+
+# Asynchronous summary generation
+async def generate_summary_async():
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(executor, generate_summary)
+
 
 # Function to transcribe audio using OpenAI Whisper
 import re
@@ -104,35 +104,6 @@ def transcribe_audio(audio_file_path):
         return transcribed_text
     except Exception as e:
         return f"Error during transcription: {e}"
-
-
-
-# Function to calculate transcription accuracy using WER
-def calculate_transcription_accuracy(system_transcript):
-    try:
-        reference_file="lung_sym.txt"
-        with open(reference_file, "r", encoding="utf-8") as f:
-            reference_transcript = f.read().strip()
-            reference_transcript=re.sub(r"[^a-zA-Z0-9\s]","",reference_transcript)
-
-        if not system_transcript.strip():
-            return "Transcription Accuracy: No valid transcription"
-
-        # Normalize texts
-        reference_transcript = reference_transcript.lower()
-        system_transcript = system_transcript.lower()
-
-        # Print for debugging
-        print("Reference:", reference_transcript)
-        print("Transcribed:", system_transcript)
-
-        error_rate = wer(reference_transcript, system_transcript)
-        accuracy = max(0, 1 - error_rate) * 100
-        return f"Transcription Accuracy: {accuracy:.2f}%"
-    except Exception as e:
-        return f"Error calculating accuracy: {e}"
-
-
 
 # Function to generate summary using GPT-4
 def generate_summary():
@@ -157,6 +128,31 @@ def generate_summary():
         return "No transcription available."
     except Exception as e:
         return f"Error generating summary: {e}"
+
+# Function to calculate transcription accuracy using WER
+def calculate_transcription_accuracy(system_transcript):
+    try:
+        reference_file="lung_sym.txt"
+        with open(reference_file, "r", encoding="utf-8") as f:
+            reference_transcript = f.read().strip()
+            reference_transcript=re.sub(r"[^a-zA-Z0-9\s]","",reference_transcript)
+
+        if not system_transcript.strip():
+            return "Transcription Accuracy: No valid transcription"
+
+        
+        reference_transcript = reference_transcript.lower()
+        system_transcript = system_transcript.lower()
+
+        # Print for debugging
+        print("Reference:", reference_transcript)
+        print("Transcribed:", system_transcript)
+
+        error_rate = wer(reference_transcript, system_transcript)
+        accuracy = max(0, 1 - error_rate) * 100
+        return f"Transcription Accuracy: {accuracy:.2f}%"
+    except Exception as e:
+        return f"Error calculating accuracy: {e}"
 
 # Function to evaluate summary quality using ROUGE score
 def evaluate_summary(reference_summary, generated_summary):
