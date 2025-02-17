@@ -17,13 +17,13 @@ from kivymd.uix.label import MDLabel
 
 # Load API Key
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY=""
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Audio settings
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 16000  # Lower sample rate for faster processing
+RATE = 16000  
 CHUNK = 1024
 OUTPUT_FILENAME = "continuous_recording.wav"
 TRANSCRIPTION_FILE = "transcription_summary.txt"
@@ -93,9 +93,8 @@ import re
 def transcribe_audio(audio_file_path):
     try:
         with open(audio_file_path, "rb") as audio_file:
-            transcription = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
-        
-        transcribed_text = transcription.text
+            translation = client.audio.translations.create(model="whisper-1", file=audio_file)
+        transcribed_text = translation.text
         transcribed_text = re.sub(r"[^a-zA-Z0-9\s]", "", transcribed_text)
 
         with open(TRANSCRIPTION_FILE, "w", encoding="utf-8") as f:
@@ -187,11 +186,14 @@ class AmbientListening(MDApp):
         self.layout.add_widget(self.rouge_label)
         return self.layout
     def start_recording(self, instance):
+        self.start_btn.disabled = True
         threading.Thread(target=record_audio, args=(self,), daemon=True).start()
 
     def stop_recording(self, instance):
         global stop_recording
         stop_recording = True
+        self.start_btn.disabled = False
+
 
     def update_status(self, status_text):
         self.status_label.text = status_text  
